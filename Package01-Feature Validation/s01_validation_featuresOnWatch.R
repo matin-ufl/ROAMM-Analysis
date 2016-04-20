@@ -46,7 +46,7 @@ fpdf <- function(VM, sample.rate = 10) {
      VM_freq <- convert.fft(fft(VM), sample.rate = sample.rate)
      VM_freq <- VM_freq[-(ceiling(nrow(VM_freq)/2):nrow(VM_freq)), ]
      idx_max <- which(VM_freq$strength == max(VM_freq$strength[2:length(VM_freq$strength)]))
-     indices <- which(round(VM_freq$freq, digits = 1) == round(VM_freq$freq[idx_max], digits = 1))
+     indices <- min(which(round(VM_freq$freq, digits = 1) == round(VM_freq$freq[idx_max], digits = 1)))
      result <- sum(VM_freq$strength[indices]) / sum(VM_freq$strength[2:(nrow(VM_freq))])
      result
 }
@@ -81,9 +81,9 @@ calculate.VM <- function (x, y, z) {
 
 setwd("~/Workspaces/R workspace/ROAMM-Analysis/Package01-Feature Validation/")
 
-watch.15min.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/041316/featureData_Tue_Apr_05_2016_13_55_56_GMT-0400_(EDT).txt")
-watch.15sec.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/041316/tempFeatureData_Tue_Apr_05_2016_13_55_57_GMT-0400_(EDT).txt")
-raw.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/041316/rawData_Tue_Apr_05_2016_13_56_10_GMT-0400_(EDT).txt")
+watch.15min.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/042016/featureData_Mon_Apr_18_2016_15_24_01_GMT-0400_(EDT).txt")
+watch.15sec.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/042016/tempFeatureData_Mon_Apr_18_2016_15_24_01_GMT-0400_(EDT).txt")
+raw.df <- fromJSON("~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Samples/042016/rawData_Mon_Apr_18_2016_15_24_18_GMT-0400_(EDT).txt")
 
 # Adding second.column to the raw information
 second.col <- unlist(lapply(raw.df$timestamp, second.character))
@@ -107,7 +107,7 @@ for(i in 1:nrow(raw.df)) {
 rm(i)
 
 # Calculating 15-sec data
-matin2.15sec.df <- data.frame(matrix(nrow = 0, ncol = 10))
+matin.15sec.df <- data.frame(matrix(nrow = 0, ncol = 10))
 for(sec in seq(1, (max(raw.df$relative.second) - 15), by = 15)) {
      start.idx <- min(which(raw.df$relative.second == sec))
      end.idx <- max(which(raw.df$relative.second == (sec + 15)))
@@ -122,7 +122,7 @@ for(sec in seq(1, (max(raw.df$relative.second) - 15), by = 15)) {
                                 p625 = p625(VM = currPart$vm),
                                 mangle = mangle(x = currPart$x, VM = currPart$vm),
                                 sdangle = sdangle(x = currPart$x, VM = currPart$vm))
-     matin2.15sec.df <- rbind(matin.15sec.df, curr.feature)
+     matin.15sec.df <- rbind(matin.15sec.df, curr.feature)
      colnames(matin.15sec.df) <- colnames(curr.feature)
 }
 
@@ -142,7 +142,20 @@ g2 <- g2 + scale_colour_manual(values = c("black")) + theme_bw()
 grid.arrange(g1, g2, nrow = 2)
 
 
-write.csv(matin.15sec.df, file = "~/Dropbox/Work-Research/Current Directory/ROAMM/Documents/041516 - Validation of constructed features on the watch/matin_15sec.csv", row.names = F)
+curr.part <- 1
+matin.15min.df <- data.frame(matrix(nrow = 0, ncol = 8))
+for(sec in seq(1, nrow(matin.15sec.df), by = 60)) {
+     matin.15min.df <- rbind(matin.15min.df,
+                             data.frame(fifteen.minute = curr.part,
+                                        mvm = mean(matin.15sec.df$mvm[sec:(sec+59)], na.rm = T),
+                                        sdvm = mean(matin.15sec.df$sdvm[sec:(sec+59)], na.rm = T),
+                                        df = mean(matin.15sec.df$df[sec:(sec+59)], na.rm = T),
+                                        fpdf = mean(matin.15sec.df$fpdf[sec:(sec+59)], na.rm = T),
+                                        p625 = mean(matin.15sec.df$p625[sec:(sec+59)], na.rm = T),
+                                        mangle = mean(matin.15sec.df$mangle[sec:(sec+59)], na.rm = T),
+                                        sdangle = mean(matin.15sec.df$sdangle[sec:(sec+59)], na.rm = T)))
+     curr.part <- curr.part + 1
+}
 
 
 

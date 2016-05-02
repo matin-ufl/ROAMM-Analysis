@@ -38,6 +38,9 @@ find.index.basedOnTime <- function(df = gearS.10hz.df, timeStr, mode = "start") 
 
 calculateSecondPassedDay <- function(timeStr) {
      hour <- as.numeric(substr(timeStr, start = 1, stop = 2))
+     if(is.na(hour)) {
+          return(NA)
+     }
      if(hour < 7) {
           hour <- hour + 12
      }
@@ -157,7 +160,7 @@ findValidParts <- function(task.chunk, row.threshold = 100, row.inChunks = 150) 
 }
 
 
-plot.timeDomain.freqDomain <- function(task.df) {
+plot.timeDomain.freqDomain <- function(task.df, title = NULL, figureFileName = NULL) {
      # Plot the data
      temp.df <- task.df
      temp.df$Time <- sapply(temp.df$timestamp, FUN = function(x) {
@@ -169,7 +172,7 @@ plot.timeDomain.freqDomain <- function(task.df) {
      g.time <- ggplot(data = plot.df) + geom_line(aes(x = Time, y = value, group = variable, colour = variable))
      g.time <- g.time + scale_colour_manual(values = c("blue", "red", "green", "black")) + theme_bw() +
           scale_x_discrete(breaks = temp.df$Time[seq(1, nrow(task.df), by = 150)]) + theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-          labs(title = paste(result.row$PID, "-", result.row$task), y = "Acceleration (m/s2)")
+          labs(title = title, y = "Acceleration (m/s2)")
      freq.df <- giveFrequencyData(task.df$vm, sampling.rate = 10)
      freq.df$frequency <- round(freq.df$freq, digits = 2)
      plot.freq.df <- data.frame(frequency = seq(0, 5, by = 0.01), strength = rep(NA, 501))
@@ -179,7 +182,12 @@ plot.timeDomain.freqDomain <- function(task.df) {
      rm(f)
      g.freq <- ggplot(data = plot.freq.df[2:nrow(plot.freq.df),]) + geom_line(aes(x = frequency, y = strength, group = "frequency", colour = "frequency")) +
           theme_bw() + labs(title = "Frequency") + scale_colour_manual(values = c("black"))
+     
+     if(!is.null(figureFileName)) {
+          png(filename = figureFileName, width = 1400, height = 600)
+     }
      grid.arrange(g.time, g.freq, ncol = 1)
+     dev.off()
 }
 
 
@@ -209,7 +217,7 @@ aggregateOneParticipant <- function(ppt.df) {
 }
 
 # Constructing features for every 10-15 seconds of data
-fifteenSecondFeatureConstruction <- function(df = gearS.10hz.df, PID, ppt.taskTimes = taskTimes.df, should.plot = FALSE) {
+fifteenSecondFeatureConstruction <- function(df = gearS.10hz.df, PID, ppt.taskTimes = taskTimes.df, should.plot = FALSE, figureFolder = NULL) {
      result <- data.frame(matrix(nrow = 0, ncol = 10))
      for(task.idx in 1:nrow(ppt.taskTimes)) {
           result.row <- data.frame(PID = PID, task = ppt.taskTimes$Task[task.idx], taskIndex = task.idx,
@@ -227,7 +235,12 @@ fifteenSecondFeatureConstruction <- function(df = gearS.10hz.df, PID, ppt.taskTi
                task.df <- df[start.idx:end.idx, c(1:4, 8, ncol(df))]
                if(should.plot && nrow(task.df) > 60) {
                     # Plot the data
-                    plot.timeDomain.freqDomain(task.df)
+                    figureFileName = NULL
+                    if(!is.null(figureFolder)) {
+                         figureFileName <- paste(figureFolder, PID, "-", as.character(result.row$task[1]), ".png", sep = "")
+                    }
+                    title <- paste(result.row$PID, "-", result.row$task)
+                    plot.timeDomain.freqDomain(task.df, title = title, figureFileName = figureFileName)
                }
                valid.parts <- findValidParts(task.df, row.threshold = 100, row.inChunks = 150)
                for(validPart.idx in 1:nrow(valid.parts)) {

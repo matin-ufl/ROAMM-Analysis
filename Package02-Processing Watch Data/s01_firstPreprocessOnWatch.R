@@ -4,8 +4,8 @@ setwd("~/Workspaces/R workspace/ROAMM-Analysis/Package02-Processing Watch Data/"
 source("f01_firstPreprocessOnWatch_functions.R")
 
 # Script -----------------------------------------
-PID <- "ANAD152"
-ppt.directory <- "~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Data for ChoresXL/raw data/gear s/415/"
+PID <- "JUOL156"
+ppt.directory <- "~/Dropbox/Work-Research/Current Directory/ROAMM/Data/Data for ChoresXL/raw data/gear s/Raw 02/420/"
 l <- dir(ppt.directory)
 new.df <- data.frame(matrix(nrow = 0, ncol = 7))
 
